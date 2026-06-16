@@ -24,8 +24,8 @@ enum Token
 class ErroLexico : public runtime_error
 {
 public:
-    ErroLexico(char encontrado)
-        : runtime_error("Erro Lexico: caractere '" + string(1, encontrado) + "' inesperado.") {}
+    ErroLexico(char c)
+        : runtime_error("Caractere invalido: " + string(1, c)) {}
 };
 
 class AnalisadorLexico
@@ -33,7 +33,7 @@ class AnalisadorLexico
 private:
     string entrada;
     int posicao;
-    char carac;
+    char car;
 
     bool ehnumero(char c)
     {
@@ -71,19 +71,19 @@ public:
 
         posicao = 0;
         tokenAtual = VAZIO;
-        lecarac();
+        lecar();
     }
 
     // le o prox caracter do buffer,se fim, retorna eof; avança o ponteiro de leitura para +1 posicão
-    void lecarac()
+    void lecar()
     {
         if (posicao < entrada.length())
         {
-            carac = entrada[posicao];
+            car = entrada[posicao];
             posicao++;
         }
         else
-            carac = EOF;
+            car = EOF;
     }
 
     // ESTADOS
@@ -91,74 +91,74 @@ public:
     void s0()
     {
 
-        while (carac == ' ' || carac == '\n' || carac == '\t' || carac == '\r')
+        while (car == ' ' || car == '\n' || car == '\t' || car == '\r')
         {
-            lecarac();
+            lecar();
         }
 
-        if (carac == EOF)
+        if (car == EOF)
         {
             s_eof();
             return;
         }
 
-        if (ehnumero(carac))
+        if (ehnumero(car))
         {
-            lecarac();
+            lecar();
             s1();
         }
 
-        else if (ehletra(carac))
+        else if (ehletra(car))
         {
-            lecarac();
+            lecar();
             s2();
         }
 
-        else if (carac == '+' || carac == '-' || carac == '*' || carac == '/')
+        else if (car == '+' || car == '-' || car == '*' || car == '/')
         {
-            lecarac();
+            lecar();
             s3_operador();
         }
-        else if (carac == '(')
+        else if (car == '(')
         {
-            lecarac();
+            lecar();
             s7_apar();
         }
-        else if (carac == ')')
+        else if (car == ')')
         {
-            lecarac();
+            lecar();
             s8_fpar();
         }
-        else if (carac == '[')
+        else if (car == '[')
         {
-            lecarac();
+            lecar();
             s9_acol();
         }
-        else if (carac == ']')
+        else if (car == ']')
         {
-            lecarac();
+            lecar();
             s10_fcol();
         }
-        else if (carac == '{')
+        else if (car == '{')
         {
-            lecarac();
+            lecar();
             s11_acha();
         }
-        else if (carac == '}')
+        else if (car == '}')
         {
-            lecarac();
+            lecar();
             s12_fcha();
         }
         else
-            throw ErroLexico(carac);
+            throw ErroLexico(car);
     }
 
     void s1()
     {
         tokenAtual = NUM;
-        if (ehnumero(carac))
+        if (ehnumero(car))
         {
-            lecarac();
+            lecar();
             s1();
         }
     }
@@ -166,9 +166,9 @@ public:
     void s2()
     {
         tokenAtual = VAR;
-        if (ehletra_num_under(carac))
+        if (ehletra_num_under(car))
         {
-            lecarac();
+            lecar();
             s2();
         }
     }
