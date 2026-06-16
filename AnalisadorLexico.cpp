@@ -3,12 +3,14 @@
 #include <fstream>   //acesso a arquivos externos (entrada de dados).
 #include <stdexcept> //gestão de erros
 
+using namespace std;
+
 // Definição dos Tokens
 enum Token
 {
     NUM,
     VAR,
-    OP_ARIT,
+    OP,
     ABRE_PAR,
     FECHA_PAR,
     ABRE_COL,
@@ -19,193 +21,176 @@ enum Token
     VAZIO
 };
 
-// Classe para tratar erro léxico
-class ErroLexico : public std::runtime_error
+class ErroLexico : public runtime_error
 {
 public:
     ErroLexico(char encontrado)
-        : std::runtime_error("Erro Lexico: caractere '" + std::string(1, encontrado) + "' inesperado.") {}
+        : runtime_error("Erro Lexico: caractere '" + string(1, encontrado) + "' inesperado.") {}
 };
 
-// Classe Analisador Léxico
 class AnalisadorLexico
 {
 private:
-    std::string entrada;
-    size_t posicao;
-    char proxCaractere;
+    string entrada;
+    int posicao;
+    char carac;
 
-    // Verifica se o caractere é um dígito de 0 a 9
-    bool ehDigito(char c)
+    bool ehnumero(char c)
     {
         return (c >= '0' && c <= '9');
     }
 
-    // Verifica se o caractere é uma letra maiúscula ou minúscula
-    bool ehLetra(char c)
+    bool ehletra(char c)
     {
         return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
     }
 
-    // Verifica se é uma letra, número ou underscore '_'
-    bool ehAlfanumericoOuUnderscore(char c)
+    bool ehletra_num_under(char c)
     {
-        return (ehLetra(c) || ehDigito(c) || c == '_');
+        return (ehletra(c) || ehnumero(c) || c == '_');
     }
 
 public:
-    Token token_Reconhecido;
+    Token tokenAtual;
 
-    // Construtor recebe arquivo a ser analisado
-    AnalisadorLexico(const std::string &nomeArquivo)
+    AnalisadorLexico(const string &nomearquivo)
     {
-        std::ifstream arquivo(nomeArquivo);
+        ifstream arquivo(nomearquivo);
         if (!arquivo.is_open())
         {
-            throw std::runtime_error("Erro ao abrir o arquivo de entrada: " + nomeArquivo);
+            throw runtime_error("Erro ao abrir o arquivo de entrada: " + nomearquivo);
         }
 
-        std::string linha;
+        string linha;
         entrada = "";
-        while (std::getline(arquivo, linha))
+        while (getline(arquivo, linha))
         { // le o arquivo linha por linha
             entrada += linha + "\n";
         }
         arquivo.close();
 
         posicao = 0;
-        token_Reconhecido = VAZIO;
-        leProxCaractere();
+        tokenAtual = VAZIO;
+        lecarac();
     }
 
     // le o prox caracter do buffer,se fim, retorna eof; avança o ponteiro de leitura para +1 posicão
-    void leProxCaractere()
+    void lecarac()
     {
         if (posicao < entrada.length())
         {
-            proxCaractere = entrada[posicao];
+            carac = entrada[posicao];
             posicao++;
         }
         else
-        {
-            proxCaractere = EOF; // Representa o fim do arquivo
-        }
+            carac = EOF;
     }
 
-    // IMPLEMENTAÇÃO DOS ESTADOS
+    // ESTADOS
 
-    // Estado Inicial s0
     void s0()
     {
-        // espaços, pulos de linha ou tabulações "resetam" a máquina
-        while (proxCaractere == ' ' || proxCaractere == '\n' || proxCaractere == '\t' || proxCaractere == '\r')
+
+        while (carac == ' ' || carac == '\n' || carac == '\t' || carac == '\r')
         {
-            leProxCaractere();
+            lecarac();
         }
 
-        if (proxCaractere == EOF)
+        if (carac == EOF)
         {
             s_eof();
             return;
         }
 
-        // caso inicie com dígito, vai para estado s1
-        if (ehDigito(proxCaractere))
+        if (ehnumero(carac))
         {
-            leProxCaractere();
-            s1(); // salta para estado de número
+            lecarac();
+            s1();
         }
-        // caso inicie com letra, vai para estado s2
-        else if (ehLetra(proxCaractere))
+
+        else if (ehletra(carac))
         {
-            leProxCaractere();
+            lecarac();
             s2();
         }
-        // caracteres operadores e delimitadores
-        else if (proxCaractere == '+' || proxCaractere == '-' || proxCaractere == '*' || proxCaractere == '/')
+
+        else if (carac == '+' || carac == '-' || carac == '*' || carac == '/')
         {
-            leProxCaractere();
-            s3_operador_aritmetico(); // Vai para o estado único
+            lecarac();
+            s3_operador();
         }
-        else if (proxCaractere == '(')
+        else if (carac == '(')
         {
-            leProxCaractere();
+            lecarac();
             s7_apar();
         }
-        else if (proxCaractere == ')')
+        else if (carac == ')')
         {
-            leProxCaractere();
+            lecarac();
             s8_fpar();
         }
-        else if (proxCaractere == '[')
+        else if (carac == '[')
         {
-            leProxCaractere();
+            lecarac();
             s9_acol();
         }
-        else if (proxCaractere == ']')
+        else if (carac == ']')
         {
-            leProxCaractere();
+            lecarac();
             s10_fcol();
         }
-        else if (proxCaractere == '{')
+        else if (carac == '{')
         {
-            leProxCaractere();
+            lecarac();
             s11_acha();
         }
-        else if (proxCaractere == '}')
+        else if (carac == '}')
         {
-            leProxCaractere();
+            lecarac();
             s12_fcha();
         }
         else
-        {
-            throw ErroLexico(proxCaractere);
-        }
+            throw ErroLexico(carac);
     }
 
-    // Estado s1: números inteiros
     void s1()
     {
-        token_Reconhecido = NUM;
-        // Enquanto vierem dígitos, a máquina continua no loop do estado s1
-        if (ehDigito(proxCaractere))
+        tokenAtual = NUM;
+        if (ehnumero(carac))
         {
-            leProxCaractere();
+            lecarac();
             s1();
         }
     }
 
-    // Estado s2: variáveis
     void s2()
     {
-        token_Reconhecido = VAR;
-        // Permite letras, números e underscore após o primeiro caractere válido
-        if (ehAlfanumericoOuUnderscore(proxCaractere))
+        tokenAtual = VAR;
+        if (ehletra_num_under(carac))
         {
-            leProxCaractere();
-            s2(); // Loop no próprio estado s2
+            lecarac();
+            s2();
         }
     }
 
-    // Estados dos operadores e símbolos
-    void s3_operador_aritmetico() { token_Reconhecido = OP_ARIT; }
-    void s7_apar() { token_Reconhecido = ABRE_PAR; }
-    void s8_fpar() { token_Reconhecido = FECHA_PAR; }
-    void s9_acol() { token_Reconhecido = ABRE_COL; }
-    void s10_fcol() { token_Reconhecido = FECHA_COL; }
-    void s11_acha() { token_Reconhecido = ABRE_CHA; }
-    void s12_fcha() { token_Reconhecido = FECHA_CHA; }
+    void s3_operador() { tokenAtual = OP; }
+    void s7_apar() { tokenAtual = ABRE_PAR; }
+    void s8_fpar() { tokenAtual = FECHA_PAR; }
+    void s9_acol() { tokenAtual = ABRE_COL; }
+    void s10_fcol() { tokenAtual = FECHA_COL; }
+    void s11_acha() { tokenAtual = ABRE_CHA; }
+    void s12_fcha() { tokenAtual = FECHA_CHA; }
 
     // Estado de fim
-    void s_eof() { token_Reconhecido = T_EOF; }
+    void s_eof() { tokenAtual = T_EOF; }
 };
 
 int main(int argc, char *argv[])
 {
     if (argc != 2)
     {
-        std::cerr << "Erro: Esqueceu de passar o nome do arquivo de entrada!\n";
-        std::cerr << "Uso: " << argv[0] << " <nome_do_arquivo.txt>\n";
+        cerr << "Erro: informe o arquivo de entrada\n";
+        cerr << "Uso: " << argv[0] << " <nome_do_arquivo.txt>\n";
         return 1;
     }
 
@@ -216,55 +201,54 @@ int main(int argc, char *argv[])
         {
             scanner.s0();
 
-            // Traduz o enum para texto legível no console de testes
-            switch (scanner.token_Reconhecido)
+            switch (scanner.tokenAtual)
             {
             case NUM:
-                std::cout << "<NUM> ";
+                cout << "<NUM> ";
                 break;
             case VAR:
-                std::cout << "<VAR> ";
+                cout << "<VAR> ";
                 break;
-            case OP_ARIT:
-                std::cout << "<OP_ARIT> ";
+            case OP:
+                cout << "<OP> ";
                 break;
             case ABRE_PAR:
-                std::cout << "<ABRE_PAR> ";
+                cout << "<ABRE_PAR> ";
                 break;
             case FECHA_PAR:
-                std::cout << "<FECHA_PAR> ";
+                cout << "<FECHA_PAR> ";
                 break;
             case ABRE_COL:
-                std::cout << "<ABRE_COL> ";
+                cout << "<ABRE_COL> ";
                 break;
             case FECHA_COL:
-                std::cout << "<FECHA_COL> ";
+                cout << "<FECHA_COL> ";
                 break;
             case ABRE_CHA:
-                std::cout << "<ABRE_CHA> ";
+                cout << "<ABRE_CHA> ";
                 break;
             case FECHA_CHA:
-                std::cout << "<FECHA_CHA> ";
+                cout << "<FECHA_CHA> ";
                 break;
             case T_EOF:
-                std::cout << "<EOF>\n";
+                cout << "<EOF>\n";
                 break;
             default:
                 break;
             }
-        } while (scanner.token_Reconhecido != T_EOF);
+        } while (scanner.tokenAtual != T_EOF);
 
-        std::cout << "Analise lexica concluida com sucesso!\n";
+        cout << "Analise lexica concluida com sucesso!\n";
     }
     catch (const ErroLexico &e)
     {
-        std::cerr << "\n"
-                  << e.what() << "\nFALHA na analise.\n";
+        cerr << "\n"
+             << e.what() << "\nFalha na analise lexica.\n";
         return 1;
     }
-    catch (const std::exception &e)
+    catch (const exception &e)
     {
-        std::cerr << "\nErro no programa: " << e.what() << "\n";
+        cerr << "\nErro: " << e.what() << "\n";
         return 1;
     }
 
