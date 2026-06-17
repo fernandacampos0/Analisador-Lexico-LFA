@@ -18,7 +18,6 @@ bool AnalisadorLexico::ehletra(char c)
             (c >= 'A' && c <= 'Z'));
 }
 
-// Construtor da classe
 AnalisadorLexico::AnalisadorLexico(const string &nomearquivo)
 {
     ifstream arquivo(nomearquivo);
