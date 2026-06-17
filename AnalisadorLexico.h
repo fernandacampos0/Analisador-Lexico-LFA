@@ -15,7 +15,6 @@ private:
 
     bool ehnumero(char c);
     bool ehletra(char c);
-    bool ehletra_num_under(char c);
 
 public:
     Token tokenAtual;
