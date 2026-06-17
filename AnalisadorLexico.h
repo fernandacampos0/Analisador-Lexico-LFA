@@ -23,22 +23,19 @@ public:
     AnalisadorLexico(const string &nomearquivo);
 
     void lecar();
-
     void s0();
-    void s1();
-    void s2();
-    void s3();
-    void s4();
-
-    void s5_operador();
-    void s7_apar();
-    void s8_fpar();
-    void s9_acol();
-    void s10_fcol();
-    void s11_acha();
-    void s12_fcha();
-
-    void s_eof();
+    void s1();  // s1 representa o estado <EOF> no diagrama
+    void s2();  // <ABRE_COL>
+    void s3();  // <ABRE_PAR>
+    void s4();  // <ABRE_CHA>
+    void s5();  // <FECHA_COL>
+    void s6();  // <FECHA_PAR>
+    void s7();  // <FECHA_CHA>
+    void s8();  // <VAR> (Letra)
+    void s9();  // <VAR> (Número)
+    void s10(); // <VAR> (Underline)
+    void s11(); // <NUM>
+    void s12(); // <OP>
 };
 
 #endif

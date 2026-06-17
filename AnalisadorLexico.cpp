@@ -68,62 +68,62 @@ void AnalisadorLexico::s0()
 
     if (car == EOF)
     {
-        s_eof();
-        return;
-    }
-
-    if (ehnumero(car))
-    {
-        lecar();
         s1();
-    }
-
-    else if (ehletra(car))
-    {
-        lecar();
-        s2();
-    }
-
-    else if (car == '+' || car == '-' || car == '*' || car == '/')
-    {
-        lecar();
-        s5_operador();
-    }
-
-    else if (car == '(')
-    {
-        lecar();
-        s7_apar();
-    }
-
-    else if (car == ')')
-    {
-        lecar();
-        s8_fpar();
+        return;
     }
 
     else if (car == '[')
     {
         lecar();
-        s9_acol();
+        s2();
     }
 
-    else if (car == ']')
+    else if (car == '(')
     {
         lecar();
-        s10_fcol();
+        s3();
     }
 
     else if (car == '{')
     {
         lecar();
-        s11_acha();
+        s4();
+    }
+
+    else if (ehnumero(car))
+    {
+        lecar();
+        s11();
+    }
+
+    else if (ehletra(car))
+    {
+        lecar();
+        s8();
+    }
+
+    else if (car == '+' || car == '-' || car == '*' || car == '/')
+    {
+        lecar();
+        s12();
+    }
+
+    else if (car == ']')
+    {
+        lecar();
+        s5();
+    }
+
+    else if (car == ')')
+    {
+        lecar();
+        s6();
     }
 
     else if (car == '}')
     {
         lecar();
-        s12_fcha();
+        s7();
     }
 
     else
@@ -133,40 +133,40 @@ void AnalisadorLexico::s0()
 }
 
 // Estado de números
-void AnalisadorLexico::s1()
+void AnalisadorLexico::s11()
 {
     tokenAtual = NUM;
 
     if (ehnumero(car))
     {
         lecar();
-        s1();
+        s11();
     }
 }
 
 // Estado de variáveis
-void AnalisadorLexico::s2()
+void AnalisadorLexico::s8()
 {
     tokenAtual = VAR;
 
     if (ehletra(car))
     {
         lecar();
-        s2();
+        s8();
     }
     else if (ehnumero(car))
     {
         lecar();
-        s3();
+        s10();
     }
     else if (car == '_')
     {
         lecar();
-        s4();
+        s9();
     }
 }
 
-void AnalisadorLexico::s3()
+void AnalisadorLexico::s10()
 {
     tokenAtual = VAR;
 
@@ -178,74 +178,74 @@ void AnalisadorLexico::s3()
     else if (ehletra(car))
     {
         lecar();
-        s2();
+        s8();
     }
     else if (car == '_')
     {
         lecar();
-        s4();
+        s9();
     }
 }
 
-void AnalisadorLexico::s4()
+void AnalisadorLexico::s9()
 {
     tokenAtual = VAR;
 
     if (car == '_')
     {
         lecar();
-        s4();
+        s9();
     }
     else if (ehletra(car))
     {
         lecar();
-        s2();
+        s8();
     }
     else if (ehnumero(car))
     {
         lecar();
-        s3();
+        s10();
     }
 }
 
-// Estados dos operadores e delimitadores
-void AnalisadorLexico::s5_operador()
+// Operadores e delimitadores
+void AnalisadorLexico::s12()
 {
     tokenAtual = OP;
 }
 
-void AnalisadorLexico::s7_apar()
+void AnalisadorLexico::s3()
 {
     tokenAtual = ABRE_PAR;
 }
 
-void AnalisadorLexico::s8_fpar()
+void AnalisadorLexico::s6()
 {
     tokenAtual = FECHA_PAR;
 }
 
-void AnalisadorLexico::s9_acol()
+void AnalisadorLexico::s2()
 {
     tokenAtual = ABRE_COL;
 }
 
-void AnalisadorLexico::s10_fcol()
+void AnalisadorLexico::s5()
 {
     tokenAtual = FECHA_COL;
 }
 
-void AnalisadorLexico::s11_acha()
+void AnalisadorLexico::s4()
 {
     tokenAtual = ABRE_CHA;
 }
 
-void AnalisadorLexico::s12_fcha()
+void AnalisadorLexico::s7()
 {
     tokenAtual = FECHA_CHA;
 }
 
 // Estado de fim do arquivo
-void AnalisadorLexico::s_eof()
+void AnalisadorLexico::s1()
 {
     tokenAtual = T_EOF;
 }
