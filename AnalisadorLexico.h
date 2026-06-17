@@ -24,7 +24,7 @@ public:
 
     void lecar();
     void s0();
-    void s1();  // s1 representa o estado <EOF> no diagrama
+    void s1();  // EOF
     void s2();  // <ABRE_COL>
     void s3();  // <ABRE_PAR>
     void s4();  // <ABRE_CHA>
