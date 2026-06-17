@@ -1,256 +1,251 @@
-#include <iostream>  //interação com o usuário
-#include <string>    //armazenamento de dados em memória
-#include <fstream>   //acesso a arquivos externos (entrada de dados).
-#include <stdexcept> //gestão de erros
+#include "AnalisadorLexico.h"
+#include "ErroLexico.h"
+
+#include <iostream>
+#include <fstream>
+#include <stdexcept>
 
 using namespace std;
 
-// Definição dos Tokens
-enum Token
+bool AnalisadorLexico::ehnumero(char c)
 {
-    NUM,
-    VAR,
-    OP,
-    ABRE_PAR,
-    FECHA_PAR,
-    ABRE_COL,
-    FECHA_COL,
-    ABRE_CHA,
-    FECHA_CHA,
-    T_EOF,
-    VAZIO
-};
+    return (c >= '0' && c <= '9');
+}
 
-class ErroLexico : public runtime_error
+bool AnalisadorLexico::ehletra(char c)
 {
-public:
-    ErroLexico(char c)
-        : runtime_error("Caractere invalido: " + string(1, c)) {}
-};
+    return ((c >= 'a' && c <= 'z') ||
+            (c >= 'A' && c <= 'Z'));
+}
 
-class AnalisadorLexico
+// Construtor da classe
+AnalisadorLexico::AnalisadorLexico(const string &nomearquivo)
 {
-private:
-    string entrada;
-    int posicao;
-    char car;
+    ifstream arquivo(nomearquivo);
 
-    bool ehnumero(char c)
+    if (!arquivo.is_open())
     {
-        return (c >= '0' && c <= '9');
+        throw runtime_error("Erro ao abrir o arquivo de entrada: " + nomearquivo);
     }
 
-    bool ehletra(char c)
+    string linha;
+    entrada = "";
+
+    while (getline(arquivo, linha))
     {
-        return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
+        entrada += linha + "\n";
     }
 
-    bool ehletra_num_under(char c)
+    arquivo.close();
+
+    posicao = 0;
+    tokenAtual = VAZIO;
+
+    lecar();
+}
+
+void AnalisadorLexico::lecar()
+{
+    if (posicao < entrada.length())
     {
-        return (ehletra(c) || ehnumero(c) || c == '_');
+        car = entrada[posicao];
+        posicao++;
     }
-
-public:
-    Token tokenAtual;
-
-    AnalisadorLexico(const string &nomearquivo)
+    else
     {
-        ifstream arquivo(nomearquivo);
-        if (!arquivo.is_open())
-        {
-            throw runtime_error("Erro ao abrir o arquivo de entrada: " + nomearquivo);
-        }
+        car = EOF;
+    }
+}
 
-        string linha;
-        entrada = "";
-        while (getline(arquivo, linha))
-        { // le o arquivo linha por linha
-            entrada += linha + "\n";
-        }
-        arquivo.close();
-
-        posicao = 0;
-        tokenAtual = VAZIO;
+// Estado inicial
+void AnalisadorLexico::s0()
+{
+    while (car == ' ' || car == '\n' ||
+           car == '\t' || car == '\r')
+    {
         lecar();
     }
 
-    // le o prox caracter do buffer,se fim, retorna eof; avança o ponteiro de leitura para +1 posicão
-    void lecar()
+    if (car == EOF)
     {
-        if (posicao < entrada.length())
-        {
-            car = entrada[posicao];
-            posicao++;
-        }
-        else
-            car = EOF;
+        s_eof();
+        return;
     }
 
-    // ESTADOS
-
-    void s0()
+    if (ehnumero(car))
     {
-
-        while (car == ' ' || car == '\n' || car == '\t' || car == '\r')
-        {
-            lecar();
-        }
-
-        if (car == EOF)
-        {
-            s_eof();
-            return;
-        }
-
-        if (ehnumero(car))
-        {
-            lecar();
-            s1();
-        }
-
-        else if (ehletra(car))
-        {
-            lecar();
-            s2();
-        }
-
-        else if (car == '+' || car == '-' || car == '*' || car == '/')
-        {
-            lecar();
-            s3_operador();
-        }
-        else if (car == '(')
-        {
-            lecar();
-            s7_apar();
-        }
-        else if (car == ')')
-        {
-            lecar();
-            s8_fpar();
-        }
-        else if (car == '[')
-        {
-            lecar();
-            s9_acol();
-        }
-        else if (car == ']')
-        {
-            lecar();
-            s10_fcol();
-        }
-        else if (car == '{')
-        {
-            lecar();
-            s11_acha();
-        }
-        else if (car == '}')
-        {
-            lecar();
-            s12_fcha();
-        }
-        else
-            throw ErroLexico(car);
+        lecar();
+        s1();
     }
 
-    void s1()
+    else if (ehletra(car))
     {
-        tokenAtual = NUM;
-        if (ehnumero(car))
-        {
-            lecar();
-            s1();
-        }
+        lecar();
+        s2();
     }
 
-    void s2()
+    else if (car == '+' || car == '-' || car == '*' || car == '/')
     {
-        tokenAtual = VAR;
-        if (ehletra_num_under(car))
-        {
-            lecar();
-            s2();
-        }
+        lecar();
+        s5_operador();
     }
 
-    void s3_operador() { tokenAtual = OP; }
-    void s7_apar() { tokenAtual = ABRE_PAR; }
-    void s8_fpar() { tokenAtual = FECHA_PAR; }
-    void s9_acol() { tokenAtual = ABRE_COL; }
-    void s10_fcol() { tokenAtual = FECHA_COL; }
-    void s11_acha() { tokenAtual = ABRE_CHA; }
-    void s12_fcha() { tokenAtual = FECHA_CHA; }
+    else if (car == '(')
+    {
+        lecar();
+        s7_apar();
+    }
 
-    // Estado de fim
-    void s_eof() { tokenAtual = T_EOF; }
-};
+    else if (car == ')')
+    {
+        lecar();
+        s8_fpar();
+    }
 
-int main(int argc, char *argv[])
+    else if (car == '[')
+    {
+        lecar();
+        s9_acol();
+    }
+
+    else if (car == ']')
+    {
+        lecar();
+        s10_fcol();
+    }
+
+    else if (car == '{')
+    {
+        lecar();
+        s11_acha();
+    }
+
+    else if (car == '}')
+    {
+        lecar();
+        s12_fcha();
+    }
+
+    else
+    {
+        throw ErroLexico(car);
+    }
+}
+
+// Estado de números
+void AnalisadorLexico::s1()
 {
-    if (argc != 2)
-    {
-        cerr << "Erro: informe o arquivo de entrada\n";
-        cerr << "Uso: " << argv[0] << " <nome_do_arquivo.txt>\n";
-        return 1;
-    }
+    tokenAtual = NUM;
 
-    try
+    if (ehnumero(car))
     {
-        AnalisadorLexico scanner(argv[1]);
-        do
-        {
-            scanner.s0();
-
-            switch (scanner.tokenAtual)
-            {
-            case NUM:
-                cout << "<NUM> ";
-                break;
-            case VAR:
-                cout << "<VAR> ";
-                break;
-            case OP:
-                cout << "<OP> ";
-                break;
-            case ABRE_PAR:
-                cout << "<ABRE_PAR> ";
-                break;
-            case FECHA_PAR:
-                cout << "<FECHA_PAR> ";
-                break;
-            case ABRE_COL:
-                cout << "<ABRE_COL> ";
-                break;
-            case FECHA_COL:
-                cout << "<FECHA_COL> ";
-                break;
-            case ABRE_CHA:
-                cout << "<ABRE_CHA> ";
-                break;
-            case FECHA_CHA:
-                cout << "<FECHA_CHA> ";
-                break;
-            case T_EOF:
-                cout << "<EOF>\n";
-                break;
-            default:
-                break;
-            }
-        } while (scanner.tokenAtual != T_EOF);
-
-        cout << "Analise lexica concluida com sucesso!\n";
+        lecar();
+        s1();
     }
-    catch (const ErroLexico &e)
+}
+
+// Estado de variáveis
+void AnalisadorLexico::s2()
+{
+    tokenAtual = VAR;
+
+    if (ehletra(car))
     {
-        cerr << "\n"
-             << e.what() << "\nFalha na analise lexica.\n";
-        return 1;
+        lecar();
+        s2();
     }
-    catch (const exception &e)
+    else if (ehnumero(car))
     {
-        cerr << "\nErro: " << e.what() << "\n";
-        return 1;
+        lecar();
+        s3();
     }
+    else if (car == '_')
+    {
+        lecar();
+        s4();
+    }
+}
 
-    return 0;
+void AnalisadorLexico::s3()
+{
+    tokenAtual = VAR;
+
+    if (ehnumero(car))
+    {
+        lecar();
+        s3();
+    }
+    else if (ehletra(car))
+    {
+        lecar();
+        s2();
+    }
+    else if (car == '_')
+    {
+        lecar();
+        s4();
+    }
+}
+
+void AnalisadorLexico::s4()
+{
+    tokenAtual = VAR;
+
+    if (car == '_')
+    {
+        lecar();
+        s4();
+    }
+    else if (ehletra(car))
+    {
+        lecar();
+        s2();
+    }
+    else if (ehnumero(car))
+    {
+        lecar();
+        s3();
+    }
+}
+
+// Estados dos operadores e delimitadores
+void AnalisadorLexico::s5_operador()
+{
+    tokenAtual = OP;
+}
+
+void AnalisadorLexico::s7_apar()
+{
+    tokenAtual = ABRE_PAR;
+}
+
+void AnalisadorLexico::s8_fpar()
+{
+    tokenAtual = FECHA_PAR;
+}
+
+void AnalisadorLexico::s9_acol()
+{
+    tokenAtual = ABRE_COL;
+}
+
+void AnalisadorLexico::s10_fcol()
+{
+    tokenAtual = FECHA_COL;
+}
+
+void AnalisadorLexico::s11_acha()
+{
+    tokenAtual = ABRE_CHA;
+}
+
+void AnalisadorLexico::s12_fcha()
+{
+    tokenAtual = FECHA_CHA;
+}
+
+// Estado de fim do arquivo
+void AnalisadorLexico::s_eof()
+{
+    tokenAtual = T_EOF;
 }
